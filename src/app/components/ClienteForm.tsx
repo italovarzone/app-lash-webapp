@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation'; // Hook de roteamento e busca de parâmetros de URL
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaSearch } from 'react-icons/fa'; // Ícone de lupa
-import Snackbar from '@mui/material/Snackbar'; // Importa o Snackbar do Material-UI
-import Alert from '@mui/material/Alert'; // Importa o Alert do Material-UI
-import Collapse from '@mui/material/Collapse'; // Importa o Collapse para transição
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
+import InputMask from 'react-input-mask';
 
-import { Cliente } from '../models/Cliente'; // Importa o modelo Cliente
+import { Cliente } from '../models/Cliente';
 
 type ProcedimentoFavorito = "" | "Efeito Fox" | "Efeito Sirena" | "Brasileiro" | "Russo" | "Classico" | "Lash Lifting";
 
@@ -16,12 +17,12 @@ type ClienteFormData = Omit<Cliente, 'procedimentoFavorito'> & {
 };
 
 const ClienteForm: React.FC = () => {
-  const router = useRouter(); // Hook de roteamento para redirecionamento
-  const searchParams = useSearchParams(); // Hook para pegar parâmetros da URL
-  const clienteParam = searchParams.get('cliente'); // Pega o cliente da URL
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const clienteParam = searchParams.get('cliente');
 
   const [formData, setFormData] = useState<ClienteFormData>({
-    id: undefined, // Adiciona ID como opcional
+    id: undefined,
     nome: '',
     email: '',
     telefone: '',
@@ -35,27 +36,49 @@ const ClienteForm: React.FC = () => {
     complemento: '',
     procedimentoFavorito: '',
   });
-  const [isEditing, setIsEditing] = useState<boolean>(false); // Estado para verificar se está editando
+
+  const [errors, setErrors] = useState<{ [key in keyof ClienteFormData]?: string }>({});
+  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
-    // Preenche o formulário com os dados do cliente da URL, se disponível
     if (clienteParam) {
       const clienteData: Cliente = JSON.parse(decodeURIComponent(clienteParam));
       setFormData({
         ...clienteData,
         dataNascimento: clienteData.dataNascimento.split('T')[0], // Ajusta o formato da data
       });
-      setIsEditing(true); // Define que estamos editando um cliente
+      setIsEditing(true);
     }
   }, [clienteParam]);
 
+  const validateForm = (): boolean => {
+    const newErrors: { [key in keyof ClienteFormData]?: string } = {};
+
+    // Validações de campo obrigatório
+    if (!formData.nome) newErrors.nome = 'Nome é obrigatório';
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
+    if (!formData.telefone || formData.telefone.replace(/\D/g, '').length < 10) newErrors.telefone = 'Telefone inválido';
+    if (!formData.dataNascimento) newErrors.dataNascimento = 'Data de Nascimento é obrigatória';
+    if (!formData.cep || formData.cep.replace(/\D/g, '').length !== 8) newErrors.cep = 'CEP inválido';
+    if (!formData.logradouro) newErrors.logradouro = 'Logradouro é obrigatório';
+    if (!formData.bairro) newErrors.bairro = 'Bairro é obrigatório';
+    if (!formData.cidade) newErrors.cidade = 'Cidade é obrigatória';
+    if (!formData.uf || formData.uf.length !== 2) newErrors.uf = 'UF inválido';
+    if (!formData.numero) newErrors.numero = 'Número é obrigatório';
+    if (!formData.procedimentoFavorito) newErrors.procedimentoFavorito = 'Procedimento Favorito é obrigatório';
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleCepSearch = async () => {
-    const cep = formData.cep.replace(/\D/g, ''); // Remove caracteres não numéricos
-    if (cep.length === 8) { // Verifica se o CEP tem 8 dígitos
+    const cep = formData.cep.replace(/\D/g, '');
+    if (cep.length === 8) {
       try {
         const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
         const data = await response.json();
@@ -90,11 +113,19 @@ const ClienteForm: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Remove a mensagem de erro assim que o usuário começar a digitar
+    if (errors[name as keyof ClienteFormData]) {
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
@@ -111,7 +142,7 @@ const ClienteForm: React.FC = () => {
         setSnackbarMessage(isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
-        setFormData({ // Limpa o formulário após o sucesso
+        setFormData({
           id: undefined,
           nome: '',
           email: '',
@@ -150,55 +181,148 @@ const ClienteForm: React.FC = () => {
       {/* Campos de formulário */}
       <div className="col-span-3">
         <label className="block text-gray-700">Nome do Cliente</label>
-        <input type="text" name="nome" placeholder="Nome completo" onChange={handleChange} value={formData.nome} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="nome"
+          placeholder="Nome completo"
+          onChange={handleChange}
+          value={formData.nome}
+          className={`w-full px-4 py-2 border rounded-md ${errors.nome ? 'border-red-500' : ''}`}
+        />
+        {errors.nome && <p className="text-red-500 text-sm">{errors.nome}</p>}
       </div>
-      <div className="col-span-3 md:col-span-2">
+      <div className="col-span-3 md:col-span-1">
         <label className="block text-gray-700">Email</label>
-        <input type="email" name="email" placeholder="Email" onChange={handleChange} value={formData.email} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          onChange={handleChange}
+          value={formData.email}
+          className={`w-full px-4 py-2 border rounded-md ${errors.email ? 'border-red-500' : ''}`}
+        />
+        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
       </div>
       <div className="col-span-3 md:col-span-1">
         <label className="block text-gray-700">Telefone</label>
-        <input type="text" name="telefone" placeholder="Telefone" onChange={handleChange} value={formData.telefone} className="w-full px-4 py-2 border rounded-md" />
+        <InputMask
+          mask="(99) 99999-9999"
+          type="text"
+          name="telefone"
+          placeholder="Telefone"
+          onChange={handleChange}
+          value={formData.telefone}
+          className={`w-full px-4 py-2 border rounded-md ${errors.telefone ? 'border-red-500' : ''}`}
+        />
+        {errors.telefone && <p className="text-red-500 text-sm">{errors.telefone}</p>}
       </div>
-      <div className="col-span-3 md:col-span-2">
+      <div className="col-span-3 md:col-span-1">
         <label className="block text-gray-700">Data de Nascimento</label>
-        <input type="date" name="dataNascimento" onChange={handleChange} value={formData.dataNascimento} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="date"
+          name="dataNascimento"
+          onChange={handleChange}
+          value={formData.dataNascimento}
+          className={`w-full px-4 py-2 border rounded-md ${errors.dataNascimento ? 'border-red-500' : ''}`}
+        />
+        {errors.dataNascimento && <p className="text-red-500 text-sm">{errors.dataNascimento}</p>}
       </div>
-      <div className="col-span-3 md:col-span-1 flex items-end">
+      <div className="mt-auto">
+      <label className="block text-gray-700">CEP</label>
         <div className="flex flex-grow">
-          <input type="text" name="cep" placeholder="CEP" onChange={handleChange} value={formData.cep} className="w-full px-4 py-2 border rounded-l-md" />
-          <button type="button" onClick={handleCepSearch} className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-500 transition duration-200">
+          <input
+            type="text"
+            name="cep"
+            placeholder="CEP"
+            onChange={handleChange}
+            value={formData.cep}
+            className={`w-full px-4 py-2 border rounded-l-md ${errors.cep ? 'border-red-500' : ''}`}
+          />
+          <button type="button" onClick={handleCepSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-r-md hover:bg-indigo-500 transition duration-200">
             <FaSearch />
           </button>
         </div>
+        {errors.cep && <p className="text-red-500 text-sm mt-1">{errors.cep}</p>} {/* Mensagem de erro do CEP */}
       </div>
       <div>
         <label className="block text-gray-700">Logradouro</label>
-        <input type="text" name="logradouro" placeholder="Logradouro" onChange={handleChange} value={formData.logradouro} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="logradouro"
+          placeholder="Logradouro"
+          onChange={handleChange}
+          value={formData.logradouro}
+          className={`w-full px-4 py-2 border rounded-md ${errors.logradouro ? 'border-red-500' : ''}`}
+        />
+        {errors.logradouro && <p className="text-red-500 text-sm">{errors.logradouro}</p>}
       </div>
       <div>
         <label className="block text-gray-700">Bairro</label>
-        <input type="text" name="bairro" placeholder="Bairro" onChange={handleChange} value={formData.bairro} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="bairro"
+          placeholder="Bairro"
+          onChange={handleChange}
+          value={formData.bairro}
+          className={`w-full px-4 py-2 border rounded-md ${errors.bairro ? 'border-red-500' : ''}`}
+        />
+        {errors.bairro && <p className="text-red-500 text-sm">{errors.bairro}</p>}
       </div>
       <div>
         <label className="block text-gray-700">Cidade</label>
-        <input type="text" name="cidade" placeholder="Cidade" onChange={handleChange} value={formData.cidade} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="cidade"
+          placeholder="Cidade"
+          onChange={handleChange}
+          value={formData.cidade}
+          className={`w-full px-4 py-2 border rounded-md ${errors.cidade ? 'border-red-500' : ''}`}
+        />
+        {errors.cidade && <p className="text-red-500 text-sm">{errors.cidade}</p>}
       </div>
       <div>
         <label className="block text-gray-700">UF</label>
-        <input type="text" name="uf" placeholder="UF" onChange={handleChange} value={formData.uf} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="uf"
+          placeholder="UF"
+          onChange={handleChange}
+          value={formData.uf}
+          className={`w-full px-4 py-2 border rounded-md ${errors.uf ? 'border-red-500' : ''}`}
+        />
+        {errors.uf && <p className="text-red-500 text-sm">{errors.uf}</p>}
       </div>
       <div>
         <label className="block text-gray-700">Número</label>
-        <input type="text" name="numero" placeholder="Número" onChange={handleChange} value={formData.numero} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="numero"
+          placeholder="Número"
+          onChange={handleChange}
+          value={formData.numero}
+          className={`w-full px-4 py-2 border rounded-md ${errors.numero ? 'border-red-500' : ''}`}
+        />
+        {errors.numero && <p className="text-red-500 text-sm">{errors.numero}</p>}
       </div>
       <div>
         <label className="block text-gray-700">Complemento</label>
-        <input type="text" name="complemento" placeholder="Complemento" onChange={handleChange} value={formData.complemento} className="w-full px-4 py-2 border rounded-md" />
+        <input
+          type="text"
+          name="complemento"
+          placeholder="Complemento"
+          onChange={handleChange}
+          value={formData.complemento}
+          className="w-full px-4 py-2 border rounded-md"
+        />
       </div>
-      <div className="col-span-3">
+      <div className="col-span-2">
         <label className="block text-gray-700">Procedimento Favorito</label>
-        <select name="procedimentoFavorito" onChange={handleChange} value={formData.procedimentoFavorito} className="w-full px-4 py-2 border rounded-md">
+        <select
+          name="procedimentoFavorito"
+          onChange={handleChange}
+          value={formData.procedimentoFavorito}
+          className={`w-full px-4 py-2 border rounded-md ${errors.procedimentoFavorito ? 'border-red-500' : ''}`}
+        >
           <option value="">Selecione o Procedimento Favorito</option>
           <option value="Efeito Fox">Efeito Fox</option>
           <option value="Efeito Sirena">Efeito Sirena</option>
@@ -207,11 +331,12 @@ const ClienteForm: React.FC = () => {
           <option value="Classico">Clássico</option>
           <option value="Lash Lifting">Lash Lifting</option>
         </select>
+        {errors.procedimentoFavorito && <p className="text-red-500 text-sm">{errors.procedimentoFavorito}</p>}
       </div>
       <div className="col-span-3">
-      <button
+        <button
           type="submit"
-          className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-500 transition duration-200"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-500 transition duration-200"
           disabled={loading}
         >
           {formData.id !== undefined && formData.id !== 0 ? 'Salvar Cliente' : 'Cadastrar Cliente'}

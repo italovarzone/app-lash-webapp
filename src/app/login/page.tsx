@@ -44,11 +44,11 @@ const Login = () => {
     setLoading(false);
 
     if (res.ok) {
-      debugger;
       setSnackbarMessage('Login bem-sucedido!');
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
       localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.nome);  // Salva o nome do usuário
       router.push('/home');
     } else {
       setSnackbarMessage(data.error || 'Erro ao fazer login');
