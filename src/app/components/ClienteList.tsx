@@ -149,16 +149,27 @@ const ClienteList: React.FC = () => {
   };
 
   return (
-    <div className="relative p-4 flex flex-col">
+    <div className="relative p-2 flex flex-col">
+        <div>
+          <label className="block text-gray-700 pb-2">Filtros</label>
+          <input
+            type="text"
+            name="complemento"
+            placeholder="Digite o nome do cliente..."
+            onChange={handleSearchChange}
+            value={searchTerm}
+            className="w-full px-4 py-2 border rounded-md mb-12"
+          />
+        </div>
       {/* Input de busca */}
-      <TextField
+      {/* <TextField
         label="Buscar por nome"
         variant="outlined"
         fullWidth
         margin="normal"
         value={searchTerm}
         onChange={handleSearchChange}
-      />
+      /> */}
 
       {/* Contêiner da tabela com rolagem e altura máxima */}
       <div className="flex-grow overflow-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
@@ -185,20 +196,19 @@ const ClienteList: React.FC = () => {
             ) : (
               clientes.map((cliente) => (
                 <tr key={cliente.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 border-b text-left">{cliente.nome}</td>
-                  <td className="py-3 px-4 border-b text-left">{new Date(cliente.dataNascimento).toLocaleDateString()}</td>
-                  <td className="py-3 px-4 border-b text-left">{cliente.telefone}</td>
-                  <td className="py-3 px-4 border-b text-left">
+                  <td className="px-4 border-b text-left">{cliente.nome}</td>
+                  <td className="px-4 border-b text-left">{new Date(cliente.dataNascimento).toLocaleDateString()}</td>
+                  <td className="px-4 border-b text-left">{cliente.telefone}</td>
+                  <td className="px-4 border-b text-left">
                     <IconButton
                       onClick={() => handleEditCliente(cliente)}
-                      color="primary"
                       aria-label="edit"
+                      className="text-primary"
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton
                       onClick={() => handleDeleteClick(cliente)}
-                      color="secondary"
                       aria-label="delete"
                     >
                       <DeleteIcon sx={{ color: 'red' }} />
@@ -217,8 +227,7 @@ const ClienteList: React.FC = () => {
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               variant="contained"
-              color="primary"
-              className="mr-2"
+              className="bg-primary mr-2 hover:bg-primary"
             >
               Anterior
             </Button>
@@ -227,14 +236,13 @@ const ClienteList: React.FC = () => {
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               variant="contained"
-              color="primary"
-              className="ml-2"
+              className="bg-primary ml2 hover:bg-primary"
             >
               Próxima
             </Button>
           </div>
           <FormControl variant="outlined" size="small">
-            <InputLabel id="select-limit-label">Resultados</InputLabel>
+            <InputLabel className="w-100" id="select-limit-label">Resultados</InputLabel>
             <Select
               labelId="select-limit-label"
               value={resultsLimit}
@@ -277,10 +285,10 @@ const ClienteList: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
+          <Button onClick={handleDeleteCancel} variant="contained" color="primary">
             Cancelar
           </Button>
-          <Button onClick={handleDeleteConfirm} color="secondary" autoFocus>
+          <Button onClick={handleDeleteConfirm} variant="contained" color="secondary" autoFocus>
             Excluir
           </Button>
         </DialogActions>

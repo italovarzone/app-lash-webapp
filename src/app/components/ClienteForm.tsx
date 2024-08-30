@@ -238,7 +238,7 @@ const ClienteForm: React.FC = () => {
             value={formData.cep}
             className={`w-full px-4 py-2 border rounded-l-md ${errors.cep ? 'border-red-500' : ''}`}
           />
-          <button type="button" onClick={handleCepSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-r-md hover:bg-indigo-500 transition duration-200">
+          <button type="button" onClick={handleCepSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-r-md hover:bg-primary transition duration-200">
             <FaSearch />
           </button>
         </div>
@@ -336,7 +336,7 @@ const ClienteForm: React.FC = () => {
       <div className="col-span-3">
         <button
           type="submit"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-500 transition duration-200"
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-indigo-500 transition duration-200"
           disabled={loading}
         >
           {formData.id !== undefined && formData.id !== 0 ? 'Salvar Cliente' : 'Cadastrar Cliente'}
