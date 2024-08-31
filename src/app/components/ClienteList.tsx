@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 
 const ClienteList: React.FC = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -212,6 +213,12 @@ const ClienteList: React.FC = () => {
                       aria-label="delete"
                     >
                       <DeleteIcon sx={{ color: 'red' }} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => router.push(`/anamnese?clientId=${cliente.id}`)}
+                      aria-label="ficha tecnica"
+                    >
+                      <MedicalServicesIcon /> {/* Certifique-se de importar o ícone que deseja usar */}
                     </IconButton>
                   </td>
                 </tr>
